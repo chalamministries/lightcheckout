@@ -21,7 +21,7 @@
 			setField: function ($input, value) {
 				$input.val(value);
 			},
-            onComplete: function(settings, values) {}
+            onComplete: function(settings, values, isDirty) {}
 		},
 		
 		oldId,
@@ -117,6 +117,16 @@
 		
 		}
 		
+		var triggerInvalid = function() {
+			plugin.settings.valid = false;
+		}
+		
+		var triggerValid = function() {
+			plugin.settings.valid = true;
+		}
+		
+		
+		
 		var cloneAutocompleteInput = function(){
 		
 			plugin.clonedInput = plugin.settings.wrappers.address.clone().addClass('lcWrapper').removeClass('hidden');
@@ -129,9 +139,20 @@
 							.removeAttr('required')
 							.attr("type", "text")
 							.val("")
-							.removeAttr('name');
+							.removeAttr('name')
+							.on('keypress', triggerInvalid);
 							
-			plugin.clonedInput.find('input').attr("placeholder", plugin.settings.wrappers.address.find('input').val() + ", " + plugin.settings.wrappers.city.find('input').val() + ", " + plugin.settings.wrappers.province.find('input').val() + ", " + plugin.settings.wrappers.country.find('input').val());
+			var theAddress = "";
+			
+			$.each(plugin.settings.wrappers, function(index, field) {
+				if(field.find('input').val() != "") {
+					theAddress += field.find('input').val() + ", ";
+				}
+			});
+			
+			theAddress = theAddress.slice(0,-2);
+			
+			plugin.clonedInput.find('input').val(theAddress).attr("placeholder", theAddress);
 
 			plugin.settings.wrappers.address.before( plugin.clonedInput.attr('id', oldId + "_lcWrapper" ) );
 			
@@ -233,7 +254,10 @@
                 values.push("city", city);
                 values.push("province", province);
                 values.push("country", country);
-				plugin.settings.onComplete(plugin.settings, values);
+                
+                triggerValid();
+                
+				plugin.settings.onComplete(plugin.settings, values, plugin.settings.valid);
 				/* show filled inputs */
 				//showInputs();
 			} else {
@@ -243,5 +267,10 @@
         }
 
         init();
+        return {
+		    isValid : function() {
+				return plugin.settings.valid;
+			}
+        }
     }
 })(jQuery);
