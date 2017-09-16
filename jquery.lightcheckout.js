@@ -14,12 +14,14 @@
 			city: '.city',
 			province: '.province',
 			zip: '.zip',
+			country: '.country',
 			shortProvince: true,
 			noNumberError: 'Please, insert also street number.',
 			language: 'en',
 			setField: function ($input, value) {
 				$input.val(value);
-			}
+			},
+            onComplete: function(settings, values) {}
 		},
 		
 		oldId,
@@ -63,14 +65,16 @@
                 address: plugin.form.find(plugin.settings.address),
                 city: plugin.form.find(plugin.settings.city),
                 province: plugin.form.find(plugin.settings.province),
-                zip: plugin.form.find(plugin.settings.zip)
+                zip: plugin.form.find(plugin.settings.zip),
+                country: plugin.form.find(plugin.settings.country)
             };
             
             if(
                 plugin.settings.inputs.address.length !== 1 ||
                 plugin.settings.inputs.city.length !== 1 ||
                 plugin.settings.inputs.province.length !== 1 ||
-                plugin.settings.inputs.zip.length !== 1
+                plugin.settings.inputs.zip.length !== 1 ||
+                plugin.settings.inputs.country.length !== 1
                 ) {
 				console.error("lightCheckout: form input missed.");
 				return;
@@ -81,7 +85,8 @@
                 address: plugin.settings.inputs.address.closest(plugin.settings.inputWrapper),
                 city: plugin.settings.inputs.city.closest(plugin.settings.inputWrapper),
                 province: plugin.settings.inputs.province.closest(plugin.settings.inputWrapper),
-                zip: plugin.settings.inputs.zip.closest(plugin.settings.inputWrapper)
+                zip: plugin.settings.inputs.zip.closest(plugin.settings.inputWrapper),
+                country: plugin.settings.inputs.country.closest(plugin.settings.inputWrapper)
             };
 				
             if( typeof $.getScript !== "function" ) {
@@ -95,7 +100,7 @@
                 getAutocompleteInputInForm();
             }
             
-            hideInputs();
+            //hideInputs();
 
             if( typeof google === "undefined" || typeof google.maps === "undefined" || typeof google.maps.places === "undefined" ) {
             	$.getScript('https://maps.googleapis.com/maps/api/js?libraries=places&language=' + plugin.settings.language + '&callback=$.fn.loadedGp' );
@@ -114,7 +119,7 @@
 		
 		var cloneAutocompleteInput = function(){
 		
-			plugin.clonedInput = plugin.settings.wrappers.address.clone().addClass('lcWrapper');
+			plugin.clonedInput = plugin.settings.wrappers.address.clone().addClass('lcWrapper').removeClass('hidden');
 
 			oldId = plugin.settings.inputs.address.attr('id');
 				
@@ -122,7 +127,11 @@
 							.attr('id', oldId + "_lcInput")
 							.attr('autocomplete', "off")
 							.removeAttr('required')
+							.attr("type", "text")
+							.val("")
 							.removeAttr('name');
+							
+			plugin.clonedInput.find('input').attr("placeholder", plugin.settings.wrappers.address.find('input').val() + ", " + plugin.settings.wrappers.city.find('input').val() + ", " + plugin.settings.wrappers.province.find('input').val() + ", " + plugin.settings.wrappers.country.find('input').val());
 
 			plugin.settings.wrappers.address.before( plugin.clonedInput.attr('id', oldId + "_lcWrapper" ) );
 			
@@ -131,18 +140,21 @@
 		}
 
         var hideInputs = function() {
-            plugin.settings.wrappers.address.addClass('lc-input lc-hide');
-            plugin.settings.wrappers.city.addClass('lc-input lc-hide');
-            plugin.settings.wrappers.zip.addClass('lc-input lc-hide');
-            plugin.settings.wrappers.province.addClass('lc-input lc-hide');
+            plugin.settings.wrappers.address.addClass('lc-input lc-hide hidden');
+            plugin.settings.wrappers.city.addClass('lc-input lc-hide hidden');
+            plugin.settings.wrappers.zip.addClass('lc-input lc-hide hidden');
+            plugin.settings.wrappers.province.addClass('lc-input lc-hide hidden');
+            plugin.settings.wrappers.country.addClass('lc-input lc-hide hidden');
         }
         
         var showInputs = function() {
-            plugin.settings.wrappers.address.removeClass('lc-hide');
-            plugin.settings.wrappers.city.removeClass('lc-hide');
-            plugin.settings.wrappers.zip.removeClass('lc-hide');
-            plugin.settings.wrappers.province.removeClass('lc-hide');
-            plugin.clonedInput.find('input').addClass('lc-input lc-hide');
+            plugin.settings.wrappers.address.removeClass('lc-hide hidden');
+            plugin.settings.wrappers.city.removeClass('lc-hide hidden');
+            plugin.settings.wrappers.zip.removeClass('lc-hide hidden');
+            plugin.settings.wrappers.province.removeClass('lc-hide hidden');
+            plugin.settings.wrappers.country.removeClass('lc-hide hidden');
+            plugin.clonedInput.find('input').addClass('lc-input lc-hide hidden');
+            plugin.clonedInput.addClass('hidden');
         }
 		
 		var setup = function() {
@@ -181,19 +193,22 @@
 
 					var object = place.address_components[i],
 						type = object.types[0];
-
+					
+					console.log(object);
 					if( type == "street_number" ) sNumber = object.long_name;
 					if( type == "route" ) address = object.long_name;
 					if( type == "locality" ) city = object.long_name;
-					if( type == "administrative_area_level_3" ) city = object.long_name;
+					//if( type == "administrative_area_level_3" ) city3 = object.long_name;
 					if( type == "administrative_area_level_2" ) province = object;
 					if( type == "postal_code" ) zip = object.long_name;
-					if( type == "administrative_area_level_1" ) level_1 = object;
-					if( type == "country" ) country = object.short_name;
+					if( type == "administrative_area_level_1" ) province = object;
+					if( type == "country" ) country = object.long_name;
 				}
 				
 				/* US exception */
-				province = (country== "US") ? level_1 : province;
+				//province = (country== "United States") ? level_1 : province;
+				
+				
 				/* long name or short name for province? */
 				province = plugin.settings.shortProvince ? province.short_name : province.long_name;
 				/* check error for address without street number */
@@ -205,13 +220,22 @@
 				}
 				
 				/* fill inputs */
-				plugin.settings.setField(plugin.settings.inputs.address, address + ' ' + sNumber);
+				plugin.settings.setField(plugin.settings.inputs.address, sNumber + ' ' + address);
 				plugin.settings.setField(plugin.settings.inputs.city, city);
 				plugin.settings.setField(plugin.settings.inputs.zip, zip);
 				plugin.settings.setField(plugin.settings.inputs.province, province);
-				
+				plugin.settings.setField(plugin.settings.inputs.country, country);
+                
+                //Trigger callback
+                var values = [];
+                values.push("sNumber", sNumber);
+                values.push("address", address);
+                values.push("city", city);
+                values.push("province", province);
+                values.push("country", country);
+				plugin.settings.onComplete(plugin.settings, values);
 				/* show filled inputs */
-				showInputs();
+				//showInputs();
 			} else {
 				/* fallback no address found */
 				showInputs();
