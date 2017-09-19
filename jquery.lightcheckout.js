@@ -146,6 +146,7 @@
 			
 			$.each(plugin.settings.wrappers, function(index, field) {
 				if(field.find('input').val() != "") {
+					triggerValid();
 					theAddress += field.find('input').val() + ", ";
 				}
 			});

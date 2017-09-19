@@ -17,6 +17,7 @@ For complete documentation, tons of examples, and a good time, visit:
 [http://www.lightcheckout.com](http://www.lightcheckout.com)
 
 Written by: Claudio Sperti
+Edited by: Steven Gauerke
 
 ###License
 Released under the MIT license - http://opensource.org/licenses/MIT
@@ -177,3 +178,11 @@ arguments:
   $input: input element that must be changed
   value: new value of the input
 ```
+
+###Methods
+
+**isValid**
+Returns if a valid address was selected. 
+```
+var addr = $('form').lightCheckout(options);
+var valid = addr.isValid(); //returns true or false
